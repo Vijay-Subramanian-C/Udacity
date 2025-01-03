@@ -1,0 +1,84 @@
+Parameters:
+
+  ProjectName:
+    Type: String
+    Description: Tag name for our project resources
+    Default: "udacity-project"
+
+Resources:
+
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${ProjectName}-stack-storage-bucket"
+      AccessControl: Private
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Status: "Enabled"
+            NoncurrentVersionExpirationInDays: 10
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+
+  WebAppInstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${ProjectName}-web-servers"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement: 
+        - Effect: 'Allow'
+          Principal:
+            Service:
+            - 'ec2.amazonaws.com'
+          Action:
+          - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: s3
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - 's3:GetObject*'
+              - 's3:PutObject*'
+              - 's3:DeleteObject*'
+              Resource:
+                - !Sub "arn:aws:s3:::${ProjectName}-stack-storage-bucket/*"
+
+  S3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref S3Bucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action:
+            - 's3:GetObject*'
+            - 's3:PutObject*'
+            - 's3:DeleteObject*'
+            Resource: !Sub "arn:aws:s3:::${ProjectName}-stack-storage-bucket/*"
+            Principal:
+              AWS: !GetAtt WebAppInstanceRole.Arn
+
+Outputs:
+  BucketName:
+    Description: "The name of the S3 bucket for storing index.html"
+    Value: !Ref S3Bucket
+    Export:
+      Name: !Sub "${ProjectName}-BucketName"
+  
+  WebAppInstanceRole:
+    Description: "Name of WebAppInstanceRole"
+    Value: !Sub "${ProjectName}-web-servers"
+    Export:
+      Name: !Sub "${ProjectName}-WebAppInstanceRole"
