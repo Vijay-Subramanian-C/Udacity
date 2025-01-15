@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+data:
+  DB_USERNAME: "udacityuser"
+  DB_NAME: "myprojectdb"
+  DB_HOST: "postgresql-service"
+  DB_PORT: "5432"
+metadata:
+  name: db-env
